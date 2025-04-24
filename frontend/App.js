@@ -1,92 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, Button, TouchableOpacity, Switch, FlatList, StyleSheet } from 'react-native';
 import axios from 'axios';
 
-const API_BASE = "https://todo-fastapi-apk.onrender.com"; 
-
-const lightModeStyles = {
-  container: {
-    fontFamily: 'Arial, sans-serif',
-    maxWidth: '600px',
-    margin: '10px auto',
-    padding: '20px',
-    backgroundColor: '#f5f5f5',
-    borderRadius: '10px',
-    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-  },
-  header: {
-    fontSize: '1.8rem',
-    marginBottom: '10px',
-    color: '#333',
-  },
-  inputWrapper: {
-    display: 'flex',
-    marginBottom: '10px',
-  },
-  input: {
-    flex: 1,
-    padding: '8px',
-    fontSize: '1rem',
-    border: '1px solid #ccc',
-    borderRadius: '5px',
-    marginRight: '10px',
-  },
-  button: {
-    padding: '8px 12px',
-    fontSize: '0.9rem',
-    backgroundColor: '#007bff',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-  },
-  actionRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '15px',
-    flexWrap: 'wrap',
-  },
-  buttonGroup: {
-    display: 'flex',
-    gap: '8px',
-  },
-  taskList: {
-    marginTop: '10px',
-  },
-  taskItem: {
-    padding: '10px',
-    marginBottom: '10px',
-    backgroundColor: '#fff',
-    borderRadius: '5px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    border: '1px solid #ccc',
-  },
-  taskText: {
-    fontSize: '1rem',
-    color: '#333',
-    flex: 1,
-    marginLeft: '10px',
-  },
-  completed: {
-    textDecoration: 'line-through',
-    color: '#888',
-  },
-  taskActions: {
-    display: 'flex',
-    gap: '5px',
-  },
-};
-
-const darkModeStyles = {
-  ...lightModeStyles,
-  container: { ...lightModeStyles.container, backgroundColor: '#333', color: '#fff' },
-  header: { ...lightModeStyles.header, color: '#fff' },
-  taskItem: { ...lightModeStyles.taskItem, backgroundColor: '#444', border: '1px solid #666' },
-  taskText: { ...lightModeStyles.taskText, color: '#fff' },
-  completed: { ...lightModeStyles.completed, color: '#aaa' },
-};
+const API_BASE = "https://todo-fastapi-apk.onrender.com";
 
 export default function App() {
   const [tasks, setTasks] = useState([]);
@@ -155,69 +71,192 @@ export default function App() {
     }
   };
 
-  const toggleDarkMode = () => setIsDarkMode(prev => !prev);
-
   return (
-    <div style={styles.container}>
-      <h1 style={styles.header}>Task List</h1>
+    <View style={styles.container}>
+      <Text style={styles.header}>Task List</Text>
 
-      <div style={styles.inputWrapper}>
-        <input
-          type="text"
-          placeholder="Add a new task"
-          value={taskInput}
-          onChange={(e) => setTaskInput(e.target.value)}
+      <View style={styles.inputWrapper}>
+        <TextInput
           style={styles.input}
+          placeholder="Add a new task"
+          placeholderTextColor={isDarkMode ? '#aaa' : '#888'}
+          value={taskInput}
+          onChangeText={setTaskInput}
         />
-        <button onClick={addTask} style={styles.button}>Add</button>
-      </div>
+        <TouchableOpacity onPress={addTask} style={styles.button}>
+          <Text style={styles.buttonText}>Add</Text>
+        </TouchableOpacity>
+      </View>
 
-      <div style={styles.actionRow}>
-        <div style={styles.buttonGroup}>
-          <button onClick={() => setFilter('all')} style={styles.button}>All</button>
-          <button onClick={() => setFilter('completed')} style={styles.button}>Completed</button>
-          <button onClick={() => setFilter('incomplete')} style={styles.button}>Pending</button>
-        </div>
-        <button onClick={toggleDarkMode} style={styles.button}>
-          {isDarkMode ? '🌙' : '☀️'}
-        </button>
-      </div>
+      <View style={styles.actionRow}>
+        <View style={styles.buttonGroup}>
+          <TouchableOpacity onPress={() => setFilter('all')} style={styles.button}><Text style={styles.buttonText}>All</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => setFilter('completed')} style={styles.button}><Text style={styles.buttonText}>Completed</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => setFilter('incomplete')} style={styles.button}><Text style={styles.buttonText}>Pending</Text></TouchableOpacity>
+        </View>
+        <TouchableOpacity onPress={() => setIsDarkMode(!isDarkMode)} style={styles.button}>
+          <Text style={styles.buttonText}>{isDarkMode ? '🌙' : '☀️'}</Text>
+        </TouchableOpacity>
+      </View>
 
-      <div style={styles.taskList}>
-        {tasks.map((task) => (
-          <div key={task.id} style={styles.taskItem}>
-            <input
-              type="checkbox"
-              checked={task.completed}
-              onChange={() => toggleTaskCompletion(task.id)}
+      <FlatList
+        data={tasks}
+        keyExtractor={(item) => item.id.toString()}
+        style={styles.taskList}
+        renderItem={({ item: task }) => (
+          <View style={styles.taskItem}>
+            <Switch
+              value={task.completed}
+              onValueChange={() => toggleTaskCompletion(task.id)}
             />
             {editingId === task.id ? (
               <>
-                <input
-                  type="text"
+                <TextInput
+                  style={[styles.input, { flex: 1, marginLeft: 10 }]}
                   value={editInput}
-                  onChange={(e) => setEditInput(e.target.value)}
-                  style={{ ...styles.input, marginLeft: '10px' }}
+                  onChangeText={setEditInput}
                 />
-                <div style={styles.taskActions}>
-                  <button onClick={() => saveEdit(task.id)} style={styles.button}>Save</button>
-                  <button onClick={() => setEditingId(null)} style={styles.button}>Cancel</button>
-                </div>
+                <View style={styles.taskActions}>
+                  <TouchableOpacity onPress={() => saveEdit(task.id)} style={styles.button}><Text style={styles.buttonText}>Save</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={() => setEditingId(null)} style={styles.button}><Text style={styles.buttonText}>Cancel</Text></TouchableOpacity>
+                </View>
               </>
             ) : (
               <>
-                <span style={{ ...styles.taskText, ...(task.completed ? styles.completed : {}) }}>
+                <Text style={[styles.taskText, task.completed && styles.completed]}>
                   {task.title}
-                </span>
-                <div style={styles.taskActions}>
-                  <button onClick={() => startEditing(task)} style={styles.button}>Edit</button>
-                  <button onClick={() => deleteTask(task.id)} style={styles.button}>Delete</button>
-                </div>
+                </Text>
+                <View style={styles.taskActions}>
+                  <TouchableOpacity onPress={() => startEditing(task)} style={styles.button}><Text style={styles.buttonText}>Edit</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={() => deleteTask(task.id)} style={styles.button}><Text style={styles.buttonText}>Delete</Text></TouchableOpacity>
+                </View>
               </>
             )}
-          </div>
-        ))}
-      </div>
-    </div>
+          </View>
+        )}
+      />
+    </View>
   );
 }
+
+const sharedStyles = {
+  inputWrapper: {
+    flexDirection: 'row',
+    marginBottom: 10,
+  },
+  input: {
+    flex: 1,
+    padding: 8,
+    fontSize: 16,
+    borderWidth: 1,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  button: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 5,
+    backgroundColor: '#007bff',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+    flexWrap: 'wrap',
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  taskItem: {
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  taskText: {
+    fontSize: 16,
+    flex: 1,
+    marginLeft: 10,
+  },
+  completed: {
+    textDecorationLine: 'line-through',
+  },
+  taskActions: {
+    flexDirection: 'row',
+    gap: 5,
+  },
+};
+
+const lightModeStyles = StyleSheet.create({
+  container: {
+    maxWidth: 600,
+    marginHorizontal: 'auto',
+    padding: 20,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    flex: 1,
+  },
+  header: {
+    fontSize: 24,
+    marginBottom: 10,
+    color: '#333',
+    textAlign: 'center',
+  },
+  ...sharedStyles,
+  input: {
+    ...sharedStyles.input,
+    borderColor: '#ccc',
+    color: '#000',
+  },
+  taskItem: {
+    ...sharedStyles.taskItem,
+    backgroundColor: '#fff',
+    borderColor: '#ccc',
+  },
+  taskText: {
+    ...sharedStyles.taskText,
+    color: '#333',
+  },
+  completed: {
+    ...sharedStyles.completed,
+    color: '#888',
+  },
+});
+
+const darkModeStyles = StyleSheet.create({
+  ...lightModeStyles,
+  container: {
+    ...lightModeStyles.container,
+    backgroundColor: '#333',
+  },
+  header: {
+    ...lightModeStyles.header,
+    color: '#fff',
+  },
+  input: {
+    ...lightModeStyles.input,
+    color: '#fff',
+    borderColor: '#666',
+  },
+  taskItem: {
+    ...lightModeStyles.taskItem,
+    backgroundColor: '#444',
+    borderColor: '#666',
+  },
+  taskText: {
+    ...lightModeStyles.taskText,
+    color: '#fff',
+  },
+  completed: {
+    ...lightModeStyles.completed,
+    color: '#aaa',
+  },
+});
