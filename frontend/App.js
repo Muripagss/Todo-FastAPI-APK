@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, TouchableOpacity, Switch, FlatList, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import axios from 'axios';
 
-const API_BASE = "https://todo-fastapi-apk.onrender.com";
+const API_BASE = 'https://todo-fastapi-apk.onrender.com';
 
 export default function App() {
   const [tasks, setTasks] = useState([]);
@@ -12,7 +12,7 @@ export default function App() {
   const [editingId, setEditingId] = useState(null);
   const [editInput, setEditInput] = useState('');
 
-  const styles = isDarkMode ? darkModeStyles : lightModeStyles;
+  const styles = createStyles(isDarkMode);
 
   useEffect(() => {
     fetchTasks();
@@ -21,37 +21,36 @@ export default function App() {
   const fetchTasks = async () => {
     try {
       const response = await axios.get(`${API_BASE}/tasks`);
-      let filteredTasks = response.data;
-      if (filter === 'completed') filteredTasks = filteredTasks.filter(t => t.completed);
-      else if (filter === 'incomplete') filteredTasks = filteredTasks.filter(t => !t.completed);
-      setTasks(filteredTasks);
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
+      let filtered = response.data;
+      if (filter === 'completed') filtered = filtered.filter(t => t.completed);
+      else if (filter === 'incomplete') filtered = filtered.filter(t => !t.completed);
+      setTasks(filtered);
+    } catch (err) {
+      console.error('Error fetching tasks:', err);
     }
   };
 
   const addTask = async () => {
     if (!taskInput) return;
     try {
-      const newTask = { title: taskInput, completed: false };
-      const response = await axios.post(`${API_BASE}/tasks`, newTask);
+      const response = await axios.post(`${API_BASE}/tasks`, { title: taskInput, completed: false });
       setTasks([...tasks, response.data]);
       setTaskInput('');
-    } catch (error) {
-      console.error('Error adding task:', error);
+    } catch (err) {
+      console.error('Error adding task:', err);
     }
   };
 
-  const toggleTaskCompletion = async (taskId) => {
-    const task = tasks.find(t => t.id === taskId);
-    const updatedTask = { ...task, completed: !task.completed };
-    await axios.put(`${API_BASE}/tasks/${taskId}`, updatedTask);
-    setTasks(tasks.map(t => (t.id === taskId ? updatedTask : t)));
+  const toggleTaskCompletion = async (id) => {
+    const task = tasks.find(t => t.id === id);
+    const updated = { ...task, completed: !task.completed };
+    await axios.put(`${API_BASE}/tasks/${id}`, updated);
+    setTasks(tasks.map(t => (t.id === id ? updated : t)));
   };
 
-  const deleteTask = async (taskId) => {
-    await axios.delete(`${API_BASE}/tasks/${taskId}`);
-    setTasks(tasks.filter(t => t.id !== taskId));
+  const deleteTask = async (id) => {
+    await axios.delete(`${API_BASE}/tasks/${id}`);
+    setTasks(tasks.filter(t => t.id !== id));
   };
 
   const startEditing = (task) => {
@@ -59,67 +58,59 @@ export default function App() {
     setEditInput(task.title);
   };
 
-  const saveEdit = async (taskId) => {
-    try {
-      const updatedTask = { ...tasks.find(t => t.id === taskId), title: editInput };
-      await axios.put(`${API_BASE}/tasks/${taskId}`, updatedTask);
-      setTasks(tasks.map(t => (t.id === taskId ? updatedTask : t)));
-      setEditingId(null);
-      setEditInput('');
-    } catch (error) {
-      console.error('Error editing task:', error);
-    }
+  const saveEdit = async (id) => {
+    const updated = { ...tasks.find(t => t.id === id), title: editInput };
+    await axios.put(`${API_BASE}/tasks/${id}`, updated);
+    setTasks(tasks.map(t => (t.id === id ? updated : t)));
+    setEditingId(null);
+    setEditInput('');
   };
 
+  const toggleDarkMode = () => setIsDarkMode(prev => !prev);
+
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.header}>Task List</Text>
 
       <View style={styles.inputWrapper}>
         <TextInput
-          style={styles.input}
           placeholder="Add a new task"
-          placeholderTextColor={isDarkMode ? '#aaa' : '#888'}
+          placeholderTextColor={isDarkMode ? '#aaa' : '#555'}
           value={taskInput}
           onChangeText={setTaskInput}
+          style={styles.input}
         />
-        <TouchableOpacity onPress={addTask} style={styles.button}>
-          <Text style={styles.buttonText}>Add</Text>
-        </TouchableOpacity>
+        <Button title="Add" onPress={addTask} color={isDarkMode ? '#0af' : '#007bff'} />
       </View>
 
       <View style={styles.actionRow}>
         <View style={styles.buttonGroup}>
-          <TouchableOpacity onPress={() => setFilter('all')} style={styles.button}><Text style={styles.buttonText}>All</Text></TouchableOpacity>
-          <TouchableOpacity onPress={() => setFilter('completed')} style={styles.button}><Text style={styles.buttonText}>Completed</Text></TouchableOpacity>
-          <TouchableOpacity onPress={() => setFilter('incomplete')} style={styles.button}><Text style={styles.buttonText}>Pending</Text></TouchableOpacity>
+          <Button title="All" onPress={() => setFilter('all')} />
+          <Button title="Completed" onPress={() => setFilter('completed')} />
+          <Button title="Pending" onPress={() => setFilter('incomplete')} />
         </View>
-        <TouchableOpacity onPress={() => setIsDarkMode(!isDarkMode)} style={styles.button}>
-          <Text style={styles.buttonText}>{isDarkMode ? '🌙' : '☀️'}</Text>
-        </TouchableOpacity>
+        <Button title={isDarkMode ? '🌙Dark Mode' : '☀️Light Mode'} onPress={toggleDarkMode} />
       </View>
 
-      <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id.toString()}
-        style={styles.taskList}
-        renderItem={({ item: task }) => (
-          <View style={styles.taskItem}>
-            <Switch
-              value={task.completed}
-              onValueChange={() => toggleTaskCompletion(task.id)}
-            />
+      <View>
+        {tasks.map(task => (
+          <View key={task.id} style={styles.taskItem}>
+            <TouchableOpacity
+              onPress={() => toggleTaskCompletion(task.id)}
+              style={[styles.checkbox, task.completed && styles.checkboxChecked]}
+            >
+              {task.completed && <Text style={styles.checkmark}>✔</Text>}
+            </TouchableOpacity>
+
             {editingId === task.id ? (
               <>
                 <TextInput
-                  style={[styles.input, { flex: 1, marginLeft: 10 }]}
                   value={editInput}
                   onChangeText={setEditInput}
+                  style={styles.input}
                 />
-                <View style={styles.taskActions}>
-                  <TouchableOpacity onPress={() => saveEdit(task.id)} style={styles.button}><Text style={styles.buttonText}>Save</Text></TouchableOpacity>
-                  <TouchableOpacity onPress={() => setEditingId(null)} style={styles.button}><Text style={styles.buttonText}>Cancel</Text></TouchableOpacity>
-                </View>
+                <Button title="Save" onPress={() => saveEdit(task.id)} />
+                <Button title="Cancel" onPress={() => setEditingId(null)} />
               </>
             ) : (
               <>
@@ -127,136 +118,97 @@ export default function App() {
                   {task.title}
                 </Text>
                 <View style={styles.taskActions}>
-                  <TouchableOpacity onPress={() => startEditing(task)} style={styles.button}><Text style={styles.buttonText}>Edit</Text></TouchableOpacity>
-                  <TouchableOpacity onPress={() => deleteTask(task.id)} style={styles.button}><Text style={styles.buttonText}>Delete</Text></TouchableOpacity>
+                  <Button title="Edit" onPress={() => startEditing(task)} />
+                  <Button title="Delete" onPress={() => deleteTask(task.id)} />
                 </View>
               </>
             )}
           </View>
-        )}
-      />
-    </View>
+        ))}
+      </View>
+    </ScrollView>
   );
 }
 
-const sharedStyles = {
-  inputWrapper: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  input: {
-    flex: 1,
-    padding: 8,
-    fontSize: 16,
-    borderWidth: 1,
-    borderRadius: 5,
-    marginRight: 10,
-  },
-  button: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 5,
-    backgroundColor: '#007bff',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-    flexWrap: 'wrap',
-  },
-  buttonGroup: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  taskItem: {
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 5,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  taskText: {
-    fontSize: 16,
-    flex: 1,
-    marginLeft: 10,
-  },
-  completed: {
-    textDecorationLine: 'line-through',
-  },
-  taskActions: {
-    flexDirection: 'row',
-    gap: 5,
-  },
-};
-
-const lightModeStyles = StyleSheet.create({
-  container: {
-    maxWidth: 600,
-    marginHorizontal: 'auto',
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 10,
-    flex: 1,
-  },
-  header: {
-    fontSize: 24,
-    marginBottom: 10,
-    color: '#333',
-    textAlign: 'center',
-  },
-  ...sharedStyles,
-  input: {
-    ...sharedStyles.input,
-    borderColor: '#ccc',
-    color: '#000',
-  },
-  taskItem: {
-    ...sharedStyles.taskItem,
-    backgroundColor: '#fff',
-    borderColor: '#ccc',
-  },
-  taskText: {
-    ...sharedStyles.taskText,
-    color: '#333',
-  },
-  completed: {
-    ...sharedStyles.completed,
-    color: '#888',
-  },
-});
-
-const darkModeStyles = StyleSheet.create({
-  ...lightModeStyles,
-  container: {
-    ...lightModeStyles.container,
-    backgroundColor: '#333',
-  },
-  header: {
-    ...lightModeStyles.header,
-    color: '#fff',
-  },
-  input: {
-    ...lightModeStyles.input,
-    color: '#fff',
-    borderColor: '#666',
-  },
-  taskItem: {
-    ...lightModeStyles.taskItem,
-    backgroundColor: '#444',
-    borderColor: '#666',
-  },
-  taskText: {
-    ...lightModeStyles.taskText,
-    color: '#fff',
-  },
-  completed: {
-    ...lightModeStyles.completed,
-    color: '#aaa',
-  },
-});
+function createStyles(isDarkMode) {
+  return StyleSheet.create({
+    container: {
+      flexGrow: 1,
+      padding: 20,
+      paddingTop: 40,
+      backgroundColor: isDarkMode ? '#222' : '#f5f5f5',
+    },
+    header: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      marginBottom: 20,
+      color: isDarkMode ? '#fff' : '#333',
+      textAlign: 'center',
+    },
+    inputWrapper: {
+      flexDirection: 'row',
+      marginBottom: 15,
+      gap: 10,
+    },
+    input: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: '#ccc',
+      borderRadius: 5,
+      paddingHorizontal: 10,
+      paddingVertical: Platform.OS === 'ios' ? 10 : 5,
+      color: isDarkMode ? '#fff' : '#000',
+      backgroundColor: isDarkMode ? '#333' : '#fff',
+    },
+    actionRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 15,
+    },
+    buttonGroup: {
+      flexDirection: 'row',
+      gap: 5,
+    },
+    taskItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#444' : '#fff',
+      padding: 10,
+      borderRadius: 8,
+      marginBottom: 10,
+      borderWidth: 1,
+      borderColor: isDarkMode ? '#666' : '#ccc',
+    },
+    checkbox: {
+      width: 24,
+      height: 24,
+      borderWidth: 2,
+      borderColor: isDarkMode ? '#888' : '#555',
+      borderRadius: 4,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    checkboxChecked: {
+      backgroundColor: isDarkMode ? '#0af' : '#007bff',
+    },
+    checkmark: {
+      color: '#fff',
+      fontWeight: 'bold',
+    },
+    taskText: {
+      flex: 1,
+      fontSize: 16,
+      marginLeft: 10,
+      color: isDarkMode ? '#fff' : '#333',
+    },
+    completed: {
+      textDecorationLine: 'line-through',
+      color: isDarkMode ? '#aaa' : '#888',
+    },
+    taskActions: {
+      flexDirection: 'row',
+      gap: 5,
+    },
+  });
+}
