@@ -2,7 +2,7 @@
 
 **Frontend Repo:** `frontend`  
 **Backend Repo:** `backend`  
-**Backend URL (Hosted on Render):** [https://todo-fastapi-leka.onrender.com](https://todo-fastapi-leka.onrender.com)
+**Backend URL (Hosted on Render):** [https://todo-fastapi-apk.onrender.com](https://todo-fastapi-apk.onrender.com)
 
 ---
 
@@ -53,7 +53,7 @@ Inside your React Native project, locate the file where the API URL is defined (
 Make sure the URL is set to:
 
 ```js
-const API_URL = 'https://todo-fastapi-leka.onrender.com';
+const API_URL = 'https://todo-fastapi-apk.onrender.com';
 ```
 
 This connects your frontend to the deployed FastAPI backend.
@@ -87,7 +87,7 @@ Scan it using the **Expo Go** app on your phone to launch the app.
 
 Open this link in your browser to check if the backend is working:
 
-[🔗 https://todo-fastapi-leka.onrender.com/tasks](https://todo-fastapi-leka.onrender.com/tasks)
+[🔗 https://todo-fastapi-apk.onrender.com/tasks](https://todo-fastapi-apk.onrender.com/tasks)
 
 > ℹ️ Note: On first load, Render may take a few seconds to "wake up."
 
