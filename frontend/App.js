@@ -70,7 +70,7 @@ export default function App() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Task List</Text>
+      <Text style={styles.header}>To-Do List</Text>
 
       <View style={styles.inputWrapper}>
         <TextInput
